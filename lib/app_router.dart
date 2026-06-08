@@ -70,7 +70,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/compare',
         builder: (context, state) {
           final selectedAcademies = state.extra as List<String>? ?? [];
-          return CompareScreen(selectedAcademies: selectedAcademies);
+          return CompareScreen(selectedAcademyNames: selectedAcademies);
         },
       ),
       GoRoute(

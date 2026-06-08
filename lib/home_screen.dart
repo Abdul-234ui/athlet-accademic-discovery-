@@ -16,7 +16,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
-  String _selectedSport = 'All';
+  final Set<String> _selectedSports = {'All'};
   final Set<String> _selectedAcademies = {};
 
   final List<String> _sports = [
@@ -99,10 +99,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ];
 
   List<Map<String, dynamic>> get _filteredAcademies {
-    if (_selectedSport == 'All') {
+    if (_selectedSports.contains('All') || _selectedSports.isEmpty) {
       return _allAcademies;
     }
-    return _allAcademies.where((a) => a['sport'] == _selectedSport).toList();
+    return _allAcademies
+        .where((a) => _selectedSports.contains(a['sport']))
+        .toList();
   }
 
   void _toggleAcademySelection(String name) {
@@ -156,38 +158,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Positioned(
             top: -100,
             right: -50,
-            child:
-                Container(
-                      width: 300,
-                      height: 300,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.green.withValues(
-                          alpha: isDark ? 0.1 : 0.05,
-                        ),
-                      ),
-                    )
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .blurXY(end: 80)
-                    .scaleXY(end: 1.2, duration: 4.seconds),
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.green.withValues(
+                  alpha: isDark ? 0.1 : 0.05,
+                ),
+              ),
+            )
+                .animate(onPlay: (c) => c.repeat(reverse: true))
+                .blurXY(end: 80)
+                .scaleXY(end: 1.2, duration: 4.seconds),
           ),
           Positioned(
             top: 300,
             left: -100,
-            child:
-                Container(
-                      width: 250,
-                      height: 250,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.blue.withValues(
-                          alpha: isDark ? 0.1 : 0.05,
-                        ),
-                      ),
-                    )
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .blurXY(end: 80)
-                    .scaleXY(end: 1.2, duration: 5.seconds),
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.blue.withValues(
+                  alpha: isDark ? 0.1 : 0.05,
+                ),
+              ),
+            )
+                .animate(onPlay: (c) => c.repeat(reverse: true))
+                .blurXY(end: 80)
+                .scaleXY(end: 1.2, duration: 5.seconds),
           ),
 
           SafeArea(
@@ -200,27 +200,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
                           children: [
-                            Text(
-                              'Good Morning,',
-                              style: TextStyle(
-                                color: isDark
-                                    ? AppColors.textSecondary
-                                    : Colors.black54,
-                                fontSize: 14,
+                            GestureDetector(
+                              onTap: () => context.go('/welcome'),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                margin: const EdgeInsets.only(right: 16),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppColors.cardDark
+                                      : Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isDark
+                                        ? Colors.white12
+                                        : Colors.black12,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.arrow_back_ios_new,
+                                  size: 16,
+                                  color: isDark
+                                      ? AppColors.textPrimary
+                                      : Colors.black87,
+                                ),
                               ),
                             ),
-                            Text(
-                              'Future Champion',
-                              style: GoogleFonts.barlowCondensed(
-                                color: isDark
-                                    ? AppColors.textPrimary
-                                    : AppColors.textLight,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Good Morning,',
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? AppColors.textSecondary
+                                        : Colors.black54,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  'Future Champion',
+                                  style: GoogleFonts.barlowCondensed(
+                                    color: isDark
+                                        ? AppColors.textPrimary
+                                        : AppColors.textLight,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -253,9 +282,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       child: TextField(
                         style: TextStyle(
-                          color: isDark
-                              ? AppColors.textPrimary
-                              : Colors.black87,
+                          color:
+                              isDark ? AppColors.textPrimary : Colors.black87,
                         ),
                         decoration: const InputDecoration(
                           hintText: 'Search academies, sports, coaches...',
@@ -287,45 +315,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       itemCount: _sports.length,
                       itemBuilder: (context, index) {
                         final sport = _sports[index];
-                        final isSelected = _selectedSport == sport;
+                        final isSelected = _selectedSports.contains(sport);
                         return Padding(
                           padding: const EdgeInsets.only(right: 12.0),
-                          child:
-                              ChoiceChip(
-                                label: Text(sport),
-                                selected: isSelected,
-                                onSelected: (selected) {
+                          child: ChoiceChip(
+                            label: Text(sport),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (sport == 'All') {
+                                  _selectedSports.clear();
+                                  _selectedSports.add('All');
+                                } else {
+                                  _selectedSports.remove('All');
                                   if (selected) {
-                                    setState(() => _selectedSport = sport);
+                                    _selectedSports.add(sport);
+                                  } else {
+                                    _selectedSports.remove(sport);
+                                    if (_selectedSports.isEmpty) {
+                                      _selectedSports.add('All');
+                                    }
                                   }
-                                },
-                                selectedColor: AppColors.green.withValues(
-                                  alpha: 0.2,
-                                ),
-                                backgroundColor: isDark
-                                    ? AppColors.cardDark
-                                    : Colors.white,
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? AppColors.green
-                                      : (isDark
-                                            ? Colors.white12
-                                            : Colors.black12),
-                                ),
-                                labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? AppColors.green
-                                      : (isDark
-                                            ? AppColors.textPrimary
-                                            : Colors.black87),
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ).animate().fadeIn(
+                                }
+                              });
+                            },
+                            selectedColor: AppColors.green.withValues(
+                              alpha: 0.2,
+                            ),
+                            backgroundColor:
+                                isDark ? AppColors.cardDark : Colors.white,
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppColors.green
+                                  : (isDark ? Colors.white12 : Colors.black12),
+                            ),
+                            labelStyle: TextStyle(
+                              color: isSelected
+                                  ? AppColors.green
+                                  : (isDark
+                                      ? AppColors.textPrimary
+                                      : Colors.black87),
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ).animate().fadeIn(
                                 delay: Duration(
                                   milliseconds: 150 + (index * 50),
                                 ),
@@ -346,9 +383,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Text(
                       'AI RECOMMENDED ACADEMIES',
                       style: TextStyle(
-                        color: isDark
-                            ? AppColors.textSecondary
-                            : Colors.black54,
+                        color:
+                            isDark ? AppColors.textSecondary : Colors.black54,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -568,9 +604,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       Text(
                         '$sport  •  $distance  •  $price',
                         style: TextStyle(
-                          color: isDark
-                              ? AppColors.textSecondary
-                              : Colors.black54,
+                          color:
+                              isDark ? AppColors.textSecondary : Colors.black54,
                           fontSize: 13,
                         ),
                       ),
@@ -666,43 +701,52 @@ class _CompareButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton.extended(
-          onPressed: onPressed,
-          backgroundColor: isDark ? AppColors.card2Dark : Colors.white,
-          elevation: 0,
-          label: Row(
-            children: [
-              const Text(
-                '⚖️ Compare Best Academies',
-                style: TextStyle(
-                  color: AppColors.green,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(
-                  color: AppColors.green,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  '$count',
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+      heroTag: 'compare_fab',
+      onPressed: onPressed,
+      backgroundColor: AppColors.green,
+      elevation: 6,
+      icon: const Icon(
+        Icons.auto_awesome,
+        color: Colors.black87,
+      ),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Compare & Suggest',
+            style: TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
           ),
-        )
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '$count Selected',
+              style: const TextStyle(
+                color: AppColors.green,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    )
         .animate(onPlay: (c) => c.repeat(reverse: true))
+        .shimmer(
+            duration: 2.seconds, color: Colors.white.withValues(alpha: 0.3))
         .boxShadow(
           end: BoxShadow(
-            color: AppColors.green.withValues(alpha: 0.4),
-            blurRadius: 15,
-            spreadRadius: 2,
+            color: AppColors.green.withValues(alpha: 0.5),
+            blurRadius: 20,
+            spreadRadius: 4,
           ),
         );
   }

@@ -146,7 +146,7 @@ class WelcomeScreen extends ConsumerWidget {
                   SportsOSButton(
                     text: 'Get Started →',
                     onPressed: () {
-                      context.go('/location');
+                      context.go('/home');
                     },
                   ).animate().fadeIn(delay: 500.ms),
                   const SizedBox(height: 16),

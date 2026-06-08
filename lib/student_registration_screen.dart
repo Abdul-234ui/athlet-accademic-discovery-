@@ -29,7 +29,7 @@ class _StudentRegistrationScreenState
   final _dobController = TextEditingController();
   final _goalsController = TextEditingController();
 
-  String _selectedSport = 'Football';
+  Set<String> _selectedSports = {'Football'};
   final List<String> _sports = [
     'Football',
     'Cricket',
@@ -179,20 +179,20 @@ class _StudentRegistrationScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                            _currentStep == 1
-                                ? 'YOUR\nDETAILS'
-                                : _currentStep == 2
+                        _currentStep == 1
+                            ? 'YOUR\nDETAILS'
+                            : _currentStep == 2
                                 ? 'SPORTS\nPROFILE'
                                 : 'YOUR\nGOALS',
-                            style: GoogleFonts.barlowCondensed(
-                              fontSize: 48,
-                              fontWeight: FontWeight.w900,
-                              height: 1.0,
-                              color: isDark
-                                  ? AppColors.textPrimary
-                                  : AppColors.textLight,
-                            ),
-                          )
+                        style: GoogleFonts.barlowCondensed(
+                          fontSize: 48,
+                          fontWeight: FontWeight.w900,
+                          height: 1.0,
+                          color: isDark
+                              ? AppColors.textPrimary
+                              : AppColors.textLight,
+                        ),
+                      )
                           .animate(key: ValueKey(_currentStep))
                           .fadeIn()
                           .slideX(begin: -0.1),
@@ -201,13 +201,12 @@ class _StudentRegistrationScreenState
                         _currentStep == 1
                             ? 'Let\'s start with your basic contact information.'
                             : _currentStep == 2
-                            ? 'Tell us about your sports interests.'
-                            : 'What are you aiming to achieve?',
+                                ? 'Tell us about your sports interests.'
+                                : 'What are you aiming to achieve?',
                         style: TextStyle(
                           fontSize: 16,
-                          color: isDark
-                              ? AppColors.textSecondary
-                              : Colors.black87,
+                          color:
+                              isDark ? AppColors.textSecondary : Colors.black87,
                         ),
                       ).animate(key: ValueKey('sub_$_currentStep')).fadeIn(),
                       const SizedBox(height: 32),
@@ -252,14 +251,18 @@ class _StudentRegistrationScreenState
                           spacing: 8,
                           runSpacing: 8,
                           children: _sports.map((sport) {
-                            final isSelected = _selectedSport == sport;
+                            final isSelected = _selectedSports.contains(sport);
                             return ChoiceChip(
                               label: Text(sport),
                               selected: isSelected,
                               onSelected: (selected) {
-                                if (selected) {
-                                  setState(() => _selectedSport = sport);
-                                }
+                                setState(() {
+                                  if (selected) {
+                                    _selectedSports.add(sport);
+                                  } else {
+                                    _selectedSports.remove(sport);
+                                  }
+                                });
                               },
                               selectedColor: AppColors.blue.withValues(
                                 alpha: 0.2,
@@ -269,15 +272,15 @@ class _StudentRegistrationScreenState
                                 color: isSelected
                                     ? AppColors.blue
                                     : (isDark
-                                          ? Colors.white24
-                                          : Colors.black12),
+                                        ? Colors.white24
+                                        : Colors.black12),
                               ),
                               labelStyle: TextStyle(
                                 color: isSelected
                                     ? AppColors.blue
                                     : (isDark
-                                          ? AppColors.textPrimary
-                                          : Colors.black87),
+                                        ? AppColors.textPrimary
+                                        : Colors.black87),
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
@@ -317,15 +320,15 @@ class _StudentRegistrationScreenState
                                 color: isSelected
                                     ? AppColors.blue
                                     : (isDark
-                                          ? Colors.white24
-                                          : Colors.black12),
+                                        ? Colors.white24
+                                        : Colors.black12),
                               ),
                               labelStyle: TextStyle(
                                 color: isSelected
                                     ? AppColors.blue
                                     : (isDark
-                                          ? AppColors.textPrimary
-                                          : Colors.black87),
+                                        ? AppColors.textPrimary
+                                        : Colors.black87),
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),

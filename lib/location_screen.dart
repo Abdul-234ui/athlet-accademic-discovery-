@@ -8,11 +8,18 @@ import 'academy_provider.dart';
 import 'colors.dart';
 import 'theme.dart';
 
-class LocationScreen extends ConsumerWidget {
+class LocationScreen extends ConsumerStatefulWidget {
   const LocationScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LocationScreen> createState() => _LocationScreenState();
+}
+
+class _LocationScreenState extends ConsumerState<LocationScreen> {
+  final Set<String> _selectedAcademies = {};
+
+  @override
+  Widget build(BuildContext context) {
     // Riverpod providers should always be watched unconditionally at the top of the build method
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
     final locationAsync = ref.watch(locationProvider);
@@ -175,90 +182,153 @@ class LocationScreen extends ConsumerWidget {
                                       ),
                                     ),
                                   ),
-                                  trailing: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
-                                        Icons.star,
-                                        color: AppColors.amber,
-                                        size: 20,
+                                      Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(
+                                            Icons.star,
+                                            color: AppColors.amber,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            academy['rating'].toString(),
+                                            style: TextStyle(
+                                              color: isDark
+                                                  ? AppColors.textPrimary
+                                                  : Colors.black87,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        academy['rating'].toString(),
-                                        style: TextStyle(
-                                          color: isDark
-                                              ? AppColors.textPrimary
-                                              : Colors.black87,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
+                                      const SizedBox(width: 8),
+                                      Checkbox(
+                                        value: _selectedAcademies.contains(
+                                            academy['name'].toString()),
+                                        onChanged: (value) {
+                                          setState(() {
+                                            if (value == true) {
+                                              _selectedAcademies.add(
+                                                  academy['name'].toString());
+                                            } else {
+                                              _selectedAcademies.remove(
+                                                  academy['name'].toString());
+                                            }
+                                          });
+                                        },
+                                        activeColor: AppColors.green,
+                                        checkColor: Colors.black,
                                       ),
                                     ],
                                   ),
                                   onTap: () {
                                     showDialog(
                                       context: context,
-                                      builder: (context) => AlertDialog(
-                                        backgroundColor: isDark
-                                            ? AppColors.cardDark
-                                            : Colors.white,
-                                        title: Text(academy['name'].toString()),
-                                        content: const Text(
-                                            'Would you like to book a free trial at this academy?'),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context),
-                                            child: const Text('Cancel'),
-                                          ),
-                                          ElevatedButton.icon(
-                                            onPressed: () async {
-                                              // Fetch phone dynamically using Riverpod
-                                              final phone = await ref.read(
-                                                academyPhoneProvider(
-                                                        academy['name']
-                                                            .toString())
-                                                    .future,
-                                              );
+                                      builder: (context) {
+                                        bool isFetching = false;
+                                        return StatefulBuilder(
+                                          builder: (context, setState) {
+                                            return AlertDialog(
+                                              backgroundColor: isDark
+                                                  ? AppColors.cardDark
+                                                  : Colors.white,
+                                              title: Text(
+                                                  academy['name'].toString()),
+                                              content: const Text(
+                                                  'Would you like to book a free trial at this academy?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: isFetching
+                                                      ? null
+                                                      : () => Navigator.pop(
+                                                          context),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                                ElevatedButton.icon(
+                                                  onPressed: isFetching
+                                                      ? null
+                                                      : () async {
+                                                          setState(() =>
+                                                              isFetching =
+                                                                  true);
 
-                                              if (phone == null ||
-                                                  phone.isEmpty) {
-                                                if (context.mounted) {
-                                                  ScaffoldMessenger.of(context)
-                                                      .showSnackBar(
-                                                    const SnackBar(
-                                                        content: Text(
-                                                            'Phone number not available for this academy.')),
-                                                  );
-                                                }
-                                                return;
-                                              }
+                                                          // Fetch phone dynamically using Riverpod
+                                                          final phone =
+                                                              await ref.read(
+                                                            academyPhoneProvider(
+                                                                    academy['name']
+                                                                        .toString())
+                                                                .future,
+                                                          );
 
-                                              final message =
-                                                  "Hi! I would like to book a free trial at ${academy['name']}.";
-                                              final url = Uri.parse(
-                                                  "https://wa.me/$phone?text=${Uri.encodeComponent(message)}");
+                                                          if (phone == null ||
+                                                              phone.isEmpty) {
+                                                            if (context
+                                                                .mounted) {
+                                                              setState(() =>
+                                                                  isFetching =
+                                                                      false);
+                                                              ScaffoldMessenger
+                                                                      .of(context)
+                                                                  .showSnackBar(
+                                                                const SnackBar(
+                                                                    content: Text(
+                                                                        'Phone number not available for this academy.')),
+                                                              );
+                                                            }
+                                                            return;
+                                                          }
 
-                                              if (await canLaunchUrl(url)) {
-                                                await launchUrl(url,
-                                                    mode: LaunchMode
-                                                        .externalApplication);
-                                              }
-                                              if (context.mounted) {
-                                                Navigator.pop(context);
-                                              }
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColors.green,
-                                              foregroundColor: Colors.black,
-                                            ),
-                                            icon: const Icon(Icons.chat),
-                                            label:
-                                                const Text('Book via WhatsApp'),
-                                          ),
-                                        ],
-                                      ),
+                                                          final message =
+                                                              "Hi! I would like to book a free trial at ${academy['name']}.";
+                                                          final url = Uri.parse(
+                                                              "https://wa.me/$phone?text=${Uri.encodeComponent(message)}");
+
+                                                          if (await canLaunchUrl(
+                                                              url)) {
+                                                            await launchUrl(url,
+                                                                mode: LaunchMode
+                                                                    .externalApplication);
+                                                          }
+                                                          if (context.mounted) {
+                                                            Navigator.pop(
+                                                                context);
+                                                          }
+                                                        },
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor:
+                                                        AppColors.green,
+                                                    foregroundColor:
+                                                        Colors.black,
+                                                  ),
+                                                  icon: isFetching
+                                                      ? const SizedBox(
+                                                          width: 16,
+                                                          height: 16,
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                                  color: Colors
+                                                                      .black,
+                                                                  strokeWidth:
+                                                                      2),
+                                                        )
+                                                      : const Icon(Icons.chat),
+                                                  label: Text(isFetching
+                                                      ? 'Connecting...'
+                                                      : 'Book via WhatsApp'),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      },
                                     );
                                   },
                                 ),
@@ -283,6 +353,37 @@ class LocationScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 32),
+                  if (_selectedAcademies.isNotEmpty) ...[
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        context.push(
+                          '/compare',
+                          extra: _selectedAcademies.toList(),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.blue,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 54),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      icon: Icon(
+                        _selectedAcademies.length > 1
+                            ? Icons.compare_arrows
+                            : Icons.visibility,
+                      ),
+                      label: Text(
+                        _selectedAcademies.length > 1
+                            ? 'Compare ${_selectedAcademies.length} Academies'
+                            : 'View Selected Academy',
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   ElevatedButton.icon(
                     onPressed: () => context.go('/home'),
                     style: ElevatedButton.styleFrom(

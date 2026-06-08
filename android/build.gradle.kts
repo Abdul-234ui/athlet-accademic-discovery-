@@ -16,6 +16,24 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 subprojects {
+    afterEvaluate {
+        project.extensions.findByType<com.android.build.gradle.BaseExtension>()?.let {
+            it.compileSdkVersion(36)
+            it.defaultConfig.minSdkVersion(24)
+
+            it.compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_17
+                targetCompatibility = JavaVersion.VERSION_17
+            }
+        }
+    }
+
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.addAll(listOf("-Xlint:-options", "-Xlint:-deprecation"))
+    }
+}
+
+subprojects {
     project.evaluationDependsOn(":app")
 }
 
