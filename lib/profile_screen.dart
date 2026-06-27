@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'auth_provider.dart';
-import 'colors.dart';
+import 'theme.dart';
+import 'utils.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -13,8 +14,22 @@ class ProfileScreen extends ConsumerWidget {
     // Watch the auth state provider for current auth state
     final authState = ref.watch(authStateProvider);
 
+    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('My Profile')),
+      appBar: AppBar(
+        title: const Text('My Profile'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/'); // Fallback to home if no history
+            }
+          },
+        ),
+      ),
       body: authState.when(
         data: (user) {
           if (user == null) {
@@ -44,9 +59,7 @@ class ProfileScreen extends ConsumerWidget {
               children: [
                 CircleAvatar(
                   radius: 60,
-                  backgroundImage: user.photoURL != null
-                      ? NetworkImage(user.photoURL!)
-                      : null,
+                  backgroundImage: getProfileImageProvider(user.photoURL),
                   child: user.photoURL == null
                       ? const Icon(Icons.person, size: 60)
                       : null,
@@ -66,8 +79,10 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton.icon(
-                  onPressed: () =>
-                      ref.read(authControllerProvider.notifier).signOut(),
+                  onPressed: () {
+                    ref.read(authStateProvider.notifier).signOut();
+                    context.go('/welcome');
+                  },
                   icon: const Icon(Icons.logout),
                   label: const Text('Sign Out'),
                 ),

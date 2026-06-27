@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,19 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'colors.dart';
 import 'theme.dart';
 import 'sports_os_button.dart';
+import 'glass_container.dart';
+import 'social_login_button.dart';
+
+class ChildFormData {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController ageController = TextEditingController();
+  String selectedSport = 'Football';
+
+  void dispose() {
+    nameController.dispose();
+    ageController.dispose();
+  }
+}
 
 class ParentRegistrationScreen extends ConsumerStatefulWidget {
   final String role;
@@ -20,18 +34,19 @@ class _ParentRegistrationScreenState
     extends ConsumerState<ParentRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   int _currentStep = 1;
-  final int _totalSteps = 3;
+  final int _totalSteps = 2; // Reduced to 2 steps
   bool _isLoading = false;
 
-  // Form Controllers
+  // Parent Form Controllers
   final _parentNameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _childNameController = TextEditingController();
-  final _childAgeController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _budgetController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
-  String _selectedSport = 'Football';
+  // Dynamic Children State
+  final List<ChildFormData> _children = [ChildFormData()];
+
   final List<String> _sports = [
     'Football',
     'Cricket',
@@ -44,12 +59,27 @@ class _ParentRegistrationScreenState
   @override
   void dispose() {
     _parentNameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
-    _childNameController.dispose();
-    _childAgeController.dispose();
-    _locationController.dispose();
-    _budgetController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    for (var child in _children) {
+      child.dispose();
+    }
     super.dispose();
+  }
+
+  void _addChild() {
+    setState(() {
+      _children.add(ChildFormData());
+    });
+  }
+
+  void _removeChild(int index) {
+    setState(() {
+      _children[index].dispose();
+      _children.removeAt(index);
+    });
   }
 
   void _nextStep() async {
@@ -58,10 +88,7 @@ class _ParentRegistrationScreenState
         setState(() => _currentStep++);
       } else {
         setState(() => _isLoading = true);
-
-        // Simulate network request to submit registration to backend
         await Future.delayed(const Duration(seconds: 2));
-
         if (!mounted) return;
         setState(() => _isLoading = false);
         context.go('/home');
@@ -84,26 +111,39 @@ class _ParentRegistrationScreenState
     TextInputType keyboardType = TextInputType.text,
     bool isDark = true,
     bool isOptional = false,
+    bool obscureText = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        style: TextStyle(
-          color: isDark ? AppColors.textPrimary : Colors.black87,
+      child: GlassContainer(
+        opacity: isDark ? 0.05 : 0.5,
+        blur: 15,
+        child: TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscureText,
+          style: TextStyle(
+            color: isDark ? AppColors.textPrimary : Colors.black87,
+          ),
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: TextStyle(
+              color: isDark ? AppColors.textSecondary : Colors.black54,
+            ),
+            prefixIcon: Icon(
+              icon,
+              color: isDark ? AppColors.textSecondary : Colors.black54,
+            ),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          ),
+          validator: (value) {
+            if (!isOptional && (value == null || value.isEmpty)) {
+              return 'Required field';
+            }
+            return null;
+          },
         ),
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        validator: (value) {
-          if (!isOptional && (value == null || value.isEmpty)) {
-            return 'Required field';
-          }
-          return null;
-        },
       ),
     );
   }
@@ -137,19 +177,13 @@ class _ParentRegistrationScreenState
       body: SafeArea(
         child: Column(
           children: [
-            // Progress Indicator
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 8.0,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
               child: Row(
                 children: List.generate(_totalSteps, (index) {
                   return Expanded(
                     child: Container(
-                      margin: EdgeInsets.only(
-                        right: index == _totalSteps - 1 ? 0 : 8,
-                      ),
+                      margin: EdgeInsets.only(right: index == _totalSteps - 1 ? 0 : 8),
                       height: 4,
                       decoration: BoxDecoration(
                         color: index < _currentStep
@@ -174,16 +208,12 @@ class _ParentRegistrationScreenState
                       Text(
                             _currentStep == 1
                                 ? 'YOUR\nDETAILS'
-                                : _currentStep == 2
-                                ? 'CHILD\nDETAILS'
-                                : 'PREFERENCES',
+                                : 'CHILDREN\nPROFILES',
                             style: GoogleFonts.barlowCondensed(
                               fontSize: 48,
                               fontWeight: FontWeight.w900,
                               height: 1.0,
-                              color: isDark
-                                  ? AppColors.textPrimary
-                                  : AppColors.textLight,
+                              color: isDark ? AppColors.textPrimary : AppColors.textLight,
                             ),
                           )
                           .animate(key: ValueKey(_currentStep))
@@ -193,24 +223,26 @@ class _ParentRegistrationScreenState
                       Text(
                         _currentStep == 1
                             ? 'Let\'s start with your basic contact information.'
-                            : _currentStep == 2
-                            ? 'Tell us about the future champion.'
-                            : 'Help us find the perfect match for your child.',
+                            : 'Add details for each future champion.',
                         style: TextStyle(
                           fontSize: 16,
-                          color: isDark
-                              ? AppColors.textSecondary
-                              : Colors.black87,
+                          color: isDark ? AppColors.textSecondary : Colors.black87,
                         ),
                       ).animate(key: ValueKey('sub_$_currentStep')).fadeIn(),
                       const SizedBox(height: 32),
 
-                      // Step 1: Parent Details
                       if (_currentStep == 1) ...[
                         _buildTextField(
                           controller: _parentNameController,
                           label: 'Full Name',
                           icon: Icons.person_outline,
+                          isDark: isDark,
+                        ),
+                        _buildTextField(
+                          controller: _emailController,
+                          label: 'Email Address',
+                          icon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
                           isDark: isDark,
                         ),
                         _buildTextField(
@@ -220,107 +252,193 @@ class _ParentRegistrationScreenState
                           keyboardType: TextInputType.phone,
                           isDark: isDark,
                         ),
-                      ],
-
-                      // Step 2: Child Details
-                      if (_currentStep == 2) ...[
                         _buildTextField(
-                          controller: _childNameController,
-                          label: 'Child\'s Name',
-                          icon: Icons.face_outlined,
+                          controller: _passwordController,
+                          label: 'Password',
+                          icon: Icons.lock_outline,
+                          obscureText: true,
                           isDark: isDark,
                         ),
                         _buildTextField(
-                          controller: _childAgeController,
-                          label: 'Age',
-                          icon: Icons.cake_outlined,
-                          keyboardType: TextInputType.number,
+                          controller: _confirmPasswordController,
+                          label: 'Confirm Password',
+                          icon: Icons.lock_outline,
+                          obscureText: true,
                           isDark: isDark,
                         ),
-                      ],
-
-                      // Step 3: Preferences
-                      if (_currentStep == 3) ...[
-                        Text(
-                          'Preferred Sport',
-                          style: TextStyle(
-                            color: isDark
-                                ? AppColors.textSecondary
-                                : Colors.black87,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _sports.map((sport) {
-                            final isSelected = _selectedSport == sport;
-                            return ChoiceChip(
-                              label: Text(sport),
-                              selected: isSelected,
-                              onSelected: (selected) {
-                                if (selected) {
-                                  setState(() => _selectedSport = sport);
-                                }
-                              },
-                              selectedColor: AppColors.green.withValues(
-                                alpha: 0.2,
+                        
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'OR SIGN UP WITH',
+                                style: TextStyle(
+                                  color: isDark ? AppColors.textSecondary : Colors.black54,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              backgroundColor: Colors.transparent,
-                              side: BorderSide(
-                                color: isSelected
-                                    ? AppColors.green
-                                    : (isDark
-                                          ? Colors.white24
-                                          : Colors.black12),
-                              ),
-                              labelStyle: TextStyle(
-                                color: isSelected
-                                    ? AppColors.green
-                                    : (isDark
-                                          ? AppColors.textPrimary
-                                          : Colors.black87),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            );
-                          }).toList(),
+                            ),
+                            Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+                          ],
                         ),
                         const SizedBox(height: 24),
-                        _buildTextField(
-                          controller: _locationController,
-                          label: 'Location (City/Area)',
-                          icon: Icons.location_on_outlined,
-                          isDark: isDark,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SocialLoginButton(
+                              type: SocialType.google,
+                              onPressed: () {},
+                            ),
+                            const SizedBox(height: 16),
+                            SocialLoginButton(
+                              type: SocialType.microsoft,
+                              onPressed: () {},
+                            ),
+                          ],
                         ),
-                        _buildTextField(
-                          controller: _budgetController,
-                          label: 'Monthly Budget (Optional)',
-                          icon: Icons.attach_money_outlined,
-                          keyboardType: TextInputType.number,
-                          isDark: isDark,
-                          isOptional: true,
-                        ),
+                        const SizedBox(height: 12),
                       ],
 
-                      const SizedBox(height: 32),
-                      _isLoading
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.green,
+                      if (_currentStep == 2) ...[
+                        ...List.generate(_children.length, (index) {
+                          final child = _children[index];
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 32.0),
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.inkDark : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isDark ? Colors.white12 : Colors.black12,
                               ),
-                            )
-                          : SportsOSButton(
-                              text: _currentStep < _totalSteps
-                                  ? 'Continue'
-                                  : 'Complete Setup',
-                              onPressed: _nextStep,
-                            ).animate().fadeIn(delay: 300.ms),
+                              boxShadow: [
+                                if (!isDark)
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  )
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Child ${index + 1}',
+                                      style: TextStyle(
+                                        color: isDark ? AppColors.textPrimary : Colors.black87,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    if (_children.length > 1)
+                                      IconButton(
+                                        icon: const Icon(Icons.close, color: Colors.red),
+                                        onPressed: () => _removeChild(index),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                _buildTextField(
+                                  controller: child.nameController,
+                                  label: 'Child\'s Name',
+                                  icon: Icons.face_outlined,
+                                  isDark: isDark,
+                                ),
+                                _buildTextField(
+                                  controller: child.ageController,
+                                  label: 'Age',
+                                  icon: Icons.cake_outlined,
+                                  keyboardType: TextInputType.number,
+                                  isDark: isDark,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Preferred Sport',
+                                  style: TextStyle(
+                                    color: isDark ? AppColors.textSecondary : Colors.black87,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _sports.map((sport) {
+                                    final isSelected = child.selectedSport == sport;
+                                    return ChoiceChip(
+                                      label: Text(sport),
+                                      selected: isSelected,
+                                      onSelected: (selected) {
+                                        if (selected) {
+                                          setState(() => child.selectedSport = sport);
+                                        }
+                                      },
+                                      selectedColor: AppColors.green.withOpacity(0.2),
+                                      backgroundColor: Colors.transparent,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                        side: BorderSide(
+                                          color: isSelected
+                                              ? AppColors.green
+                                              : (isDark ? Colors.white24 : Colors.black12),
+                                        ),
+                                      ),
+                                      labelStyle: TextStyle(
+                                        color: isSelected
+                                            ? AppColors.green
+                                            : (isDark ? Colors.white : Colors.black87),
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                          ).animate().fadeIn().slideY(begin: 0.1);
+                        }),
+
+                        // Add another child button
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: _addChild,
+                            icon: const Icon(Icons.add, color: AppColors.green),
+                            label: const Text(
+                              'Add Another Child',
+                              style: TextStyle(color: AppColors.green, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
                     ],
                   ),
                 ),
+              ),
+            ),
+
+            Container(
+              padding: const EdgeInsets.all(24.0),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.inkDark : AppColors.inkLight,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    offset: const Offset(0, -4),
+                    blurRadius: 16,
+                  ),
+                ],
+              ),
+              child: SportsOSButton(
+                text: _isLoading ? 'Loading...' : (_currentStep < _totalSteps ? 'Continue' : 'Complete Setup'),
+                onPressed: _isLoading ? () {} : _nextStep,
               ),
             ),
           ],

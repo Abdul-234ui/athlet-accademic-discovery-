@@ -79,13 +79,16 @@ String _getIconForTypes(List<dynamic>? types) {
 
   final typeStrings = types.map((e) => e.toString()).toList();
 
-  if (typeStrings.contains('gym') || typeStrings.contains('health'))
+  if (typeStrings.contains('gym') || typeStrings.contains('health')) {
     return '💪';
-  if (typeStrings.contains('stadium') || typeStrings.contains('sports_complex'))
+  }
+  if (typeStrings.contains('stadium') || typeStrings.contains('sports_complex')) {
     return '🏟️';
+  }
   if (typeStrings.contains('park')) return '🌳';
-  if (typeStrings.contains('school') || typeStrings.contains('university'))
+  if (typeStrings.contains('school') || typeStrings.contains('university')) {
     return '🏫';
+  }
   if (typeStrings.contains('bowling_alley')) return '🎳';
 
   return '📍'; // Default fallback icon

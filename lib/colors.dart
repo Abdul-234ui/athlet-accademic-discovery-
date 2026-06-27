@@ -24,10 +24,49 @@ class AppColors {
   static const textSecondary = Color(0xFFC8DEFF);
   static const textTertiary = Color(0xFF7AACD4);
 
-  // Light Mode Tokens
+  // Anti-Gravity Light Mode Tokens (Professional Green Theme)
+  static const agBackground = Color(0xFFF4F6F8);
+  static const agSurface = Color(0xFFFFFFFF);
+  static const agPrimary = Color(0xFF059669); // Professional Emerald
+  static const agPrimaryTranslucent = Color(0x1F059669); // 12% opacity
+  static const agTextNeutral = Color(0xFF202124);
+  static const agTextMuted = Color(0xFF5F6368);
+  static const agShadow = Color(0x0A000000); // 4% opacity
+  
+  // Engaging Professional Glows for Light Mode
+  static const agGlowEmerald = Color(0xFF10B981);
+  static const agGlowTeal = Color(0xFF0D9488);
+  static const agGlowMint = Color(0xFF34D399);
+
+  // Legacy Light Mode Tokens (Keep for fallback if needed)
   static const inkLight = Color(0xFFF8FAFF);
   static const cardLight = Color(0xFFFFFFFF);
   static const greenLight = Color(0xFF059669);
   static const blueLight = Color(0xFF2563EB);
   static const textLight = Color(0xFF0F172A);
+
+  // Modern Engaging Gradients
+  static const darkGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF071425), // ink2Dark
+      Color(0xFF040D1C), // inkDark
+      Color(0xFF0C1F38), // ink3Dark
+    ],
+  );
+
+  static const lightGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    stops: [0.0, 0.6, 1.0],
+    colors: [
+      Color(0xFFFFFFFF), // 60% Pure White
+      Color(0xFFE6F4F1), // Transition
+      Color(0xFF059669), // 40% Emerald Green
+    ],
+  );
+
+  static const glassBorderDark = Color(0x33FFFFFF);
+  static const glassBorderLight = Color(0x1A000000);
 }

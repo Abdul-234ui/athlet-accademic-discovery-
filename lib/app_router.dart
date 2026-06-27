@@ -6,12 +6,22 @@ import 'role_select_screen.dart';
 import 'sign_in_screen.dart';
 import 'parent_registration_screen.dart';
 import 'home_screen.dart';
-import 'compare_screen.dart';
+import 'comparison_screen.dart';
 import 'student_sign_in_screen.dart';
 import 'coach_sign_in_screen.dart';
 import 'coach_registration_screen.dart';
+import 'coach_registration_screen.dart';
 import 'student_registration_screen.dart';
 import 'location_screen.dart'; // Import the new location screen
+import 'otp_signin_screen.dart';
+import 'academies_search_screen.dart';
+import 'academy_details_screen.dart';
+import 'sports_details_screen.dart';
+import 'edit_profile_screen.dart';
+import 'notifications_screen.dart';
+import 'city_page_screen.dart';
+import 'forgot_password_screen.dart';
+import 'settings_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -35,12 +45,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SignInScreen(),
       ),
       GoRoute(
+        path: '/edit_profile',
+        builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/otp_signin',
+        builder: (context, state) => const OtpSignInScreen(),
+      ),
+      GoRoute(
         path: '/student_signin',
         builder: (context, state) => const StudentSignInScreen(),
       ),
       GoRoute(
         path: '/coach_signin',
         builder: (context, state) => const CoachSignInScreen(),
+      ),
+      GoRoute(
+        path: '/forgot_password',
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(
         path: '/register/:role',
@@ -55,7 +81,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             return const CoachRegistrationScreen();
           }
 
-          if (role == 'Student') {
+          if (role == 'Athlete') {
             return StudentRegistrationScreen(role: role);
           }
 
@@ -68,14 +94,40 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
         path: '/compare',
-        builder: (context, state) {
-          final selectedAcademies = state.extra as List<String>? ?? [];
-          return CompareScreen(selectedAcademyNames: selectedAcademies);
-        },
+        builder: (context, state) => const ComparisonScreen(),
       ),
       GoRoute(
         path: '/location', // Define a path for the LocationScreen
         builder: (context, state) => const LocationScreen(),
+      ),
+      GoRoute(
+        path: '/academies_search',
+        builder: (context, state) => const AcademiesSearchScreen(),
+      ),
+      GoRoute(
+        path: '/academy_details/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '1';
+          return AcademyDetailsScreen(academyId: id);
+        },
+      ),
+      GoRoute(
+        path: '/sport_details/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? 'cricket';
+          return SportsDetailsScreen(sportId: id);
+        },
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/city/:cityName',
+        builder: (context, state) {
+          final cityName = state.pathParameters['cityName'] ?? 'Madanapalle';
+          return CityPageScreen(cityName: cityName);
+        },
       ),
     ],
   );

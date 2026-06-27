@@ -6,6 +6,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'colors.dart';
 import 'theme.dart';
 import 'sports_os_button.dart';
+import 'forgot_password_dialog.dart';
+import 'social_login_button.dart';
+import 'auth_provider.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
   const SignInScreen({super.key});
@@ -35,6 +38,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -47,7 +51,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           onPressed: () => context.go('/welcome'),
         ),
       ),
-      body: SafeArea(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: isDark ? AppColors.darkGradient : AppColors.lightGradient,
+        ),
+        child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Form(
@@ -229,7 +239,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      // TODO: Implement forgot password
+                      showDialog(
+                        context: context,
+                        barrierColor: Colors.black54,
+                        builder: (context) => const ForgotPasswordDialog(),
+                      );
                     },
                     child: const Text('Forgot Password?'),
                   ),
@@ -240,22 +254,23 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 // Sign In Button
                 SportsOSButton(
                   text: 'Sign In',
-                  onPressed: () {
+                  onPressed: () async {
                     // Reset error message on new attempt
                     setState(() => _errorMessage = null);
 
                     if (_formKey.currentState!.validate()) {
-                      // Simulate error for demonstration if input is 'error'
-                      if (_emailController.text.trim().toLowerCase() ==
-                          'error') {
-                        setState(() {
-                          _errorMessage =
-                              'Invalid credentials. Please try again.';
-                        });
-                      } else {
-                        // TODO: Add backend authentication logic here
-                        // Pass the selected role to the home screen if needed
-                        context.go('/home');
+                      try {
+                        await ref.read(authControllerProvider).loginWithEmail(
+                          _emailController.text.trim(),
+                          _passwordController.text,
+                        );
+                        if (mounted) context.go('/home');
+                      } catch (e) {
+                        if (mounted) {
+                          setState(() {
+                            _errorMessage = 'Invalid credentials. Please try again.';
+                          });
+                        }
                       }
                     }
                   },
@@ -291,9 +306,26 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   ],
                 ).animate().fadeIn(delay: 750.ms),
 
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // Register redirect
+                  // Social Login Buttons
+                  SocialLoginButton(
+                    type: SocialType.google,
+                    onPressed: () {
+                      // Handle Google login
+                    },
+                  ).animate().fadeIn(delay: 800.ms),
+                  const SizedBox(height: 16),
+                  SocialLoginButton(
+                    type: SocialType.microsoft,
+                    onPressed: () {
+                      // Handle Microsoft login
+                    },
+                  ).animate().fadeIn(delay: 850.ms),
+
+                  const SizedBox(height: 32),
+
+                  // Register redirect
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -332,6 +364,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

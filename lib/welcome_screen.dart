@@ -43,47 +43,67 @@ class WelcomeScreen extends ConsumerWidget {
             ),
           ),
 
-          // Neon Green Glow Effect (Top Right)
+          // Top Right Glow
           Positioned(
-            top: -50,
-            right: -50,
+            top: -100,
+            right: -100,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 450,
+              height: 450,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.green.withValues(
-                  alpha: isDark ? 0.15 : 0.05,
-                ),
+                color: isDark 
+                    ? AppColors.green.withValues(alpha: 0.15) 
+                    : AppColors.agGlowEmerald.withValues(alpha: 0.35), // Increased significantly
               ),
             )
                 .animate(
                   onPlay: (controller) => controller.repeat(reverse: true),
                 )
-                .scaleXY(end: 1.2, duration: 4.seconds)
-                .blurXY(end: 60),
+                .scaleXY(end: 1.3, duration: 4.seconds)
+                .blurXY(end: 120),
           ),
 
-          // Blue Glow Effect (Bottom Left)
+          // Bottom Left Glow
           Positioned(
-            bottom: 100,
-            left: -100,
+            bottom: 50,
+            left: -150,
             child: Container(
-              width: 350,
-              height: 350,
+              width: 500,
+              height: 500,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.blue.withValues(
-                  alpha: isDark ? 0.1 : 0.03,
-                ),
+                color: isDark 
+                    ? AppColors.blue.withValues(alpha: 0.1) 
+                    : AppColors.agGlowTeal.withValues(alpha: 0.35), // Increased significantly
               ),
             )
                 .animate(
                   onPlay: (controller) => controller.repeat(reverse: true),
                 )
-                .scaleXY(end: 1.3, duration: 5.seconds)
-                .blurXY(end: 80),
+                .scaleXY(end: 1.4, duration: 5.seconds)
+                .blurXY(end: 140),
           ),
+          
+          // Extra Middle Glow for Light Mode Enhancement
+          if (!isDark)
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.3,
+              right: -150,
+              child: Container(
+                width: 550,
+                height: 550,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.agGlowMint.withValues(alpha: 0.25), // Increased significantly
+                ),
+              )
+                  .animate(
+                    onPlay: (controller) => controller.repeat(reverse: true),
+                  )
+                  .slideX(begin: 0, end: -0.3, duration: 6.seconds)
+                  .blurXY(end: 160),
+            ),
 
           // Main UI Content
           SafeArea(

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'colors.dart';
 import 'theme.dart';
 import 'sports_os_button.dart';
+import 'glass_container.dart';
+import 'social_login_button.dart';
 
 class StudentRegistrationScreen extends ConsumerStatefulWidget {
   final String role;
@@ -25,7 +28,10 @@ class _StudentRegistrationScreenState
 
   // Form Controllers
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _dobController = TextEditingController();
   final _goalsController = TextEditingController();
 
@@ -51,7 +57,10 @@ class _StudentRegistrationScreenState
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _dobController.dispose();
     _goalsController.dispose();
     super.dispose();
@@ -63,10 +72,7 @@ class _StudentRegistrationScreenState
         setState(() => _currentStep++);
       } else {
         setState(() => _isLoading = true);
-
-        // Simulate network request to submit registration to backend
         await Future.delayed(const Duration(seconds: 2));
-
         if (!mounted) return;
         setState(() => _isLoading = false);
         context.go('/home');
@@ -89,28 +95,41 @@ class _StudentRegistrationScreenState
     TextInputType keyboardType = TextInputType.text,
     bool isDark = true,
     bool isOptional = false,
+    bool obscureText = false,
     int maxLines = 1,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20.0),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        style: TextStyle(
-          color: isDark ? AppColors.textPrimary : Colors.black87,
+      child: GlassContainer(
+        opacity: isDark ? 0.05 : 0.5,
+        blur: 15,
+        child: TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          obscureText: obscureText,
+          style: TextStyle(
+            color: isDark ? AppColors.textPrimary : Colors.black87,
+          ),
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: TextStyle(
+              color: isDark ? AppColors.textSecondary : Colors.black54,
+            ),
+            prefixIcon: icon != Icons.edit ? Icon(
+              icon,
+              color: isDark ? AppColors.textSecondary : Colors.black54,
+            ) : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          ),
+          validator: (value) {
+            if (!isOptional && (value == null || value.isEmpty)) {
+              return 'Required field';
+            }
+            return null;
+          },
         ),
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: icon != Icons.edit ? Icon(icon) : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        validator: (value) {
-          if (!isOptional && (value == null || value.isEmpty)) {
-            return 'Required field';
-          }
-          return null;
-        },
       ),
     );
   }
@@ -144,19 +163,13 @@ class _StudentRegistrationScreenState
       body: SafeArea(
         child: Column(
           children: [
-            // Progress Indicator
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24.0,
-                vertical: 8.0,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
               child: Row(
                 children: List.generate(_totalSteps, (index) {
                   return Expanded(
                     child: Container(
-                      margin: EdgeInsets.only(
-                        right: index == _totalSteps - 1 ? 0 : 8,
-                      ),
+                      margin: EdgeInsets.only(right: index == _totalSteps - 1 ? 0 : 8),
                       height: 4,
                       decoration: BoxDecoration(
                         color: index < _currentStep
@@ -188,9 +201,7 @@ class _StudentRegistrationScreenState
                           fontSize: 48,
                           fontWeight: FontWeight.w900,
                           height: 1.0,
-                          color: isDark
-                              ? AppColors.textPrimary
-                              : AppColors.textLight,
+                          color: isDark ? AppColors.textPrimary : AppColors.textLight,
                         ),
                       )
                           .animate(key: ValueKey(_currentStep))
@@ -205,13 +216,11 @@ class _StudentRegistrationScreenState
                                 : 'What are you aiming to achieve?',
                         style: TextStyle(
                           fontSize: 16,
-                          color:
-                              isDark ? AppColors.textSecondary : Colors.black87,
+                          color: isDark ? AppColors.textSecondary : Colors.black87,
                         ),
                       ).animate(key: ValueKey('sub_$_currentStep')).fadeIn(),
                       const SizedBox(height: 32),
 
-                      // Step 1: Personal Details
                       if (_currentStep == 1) ...[
                         _buildTextField(
                           controller: _nameController,
@@ -220,10 +229,10 @@ class _StudentRegistrationScreenState
                           isDark: isDark,
                         ),
                         _buildTextField(
-                          controller: _dobController,
-                          label: 'Date of Birth (DD/MM/YYYY)',
-                          icon: Icons.calendar_today,
-                          keyboardType: TextInputType.datetime,
+                          controller: _emailController,
+                          label: 'Email Address',
+                          icon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
                           isDark: isDark,
                         ),
                         _buildTextField(
@@ -233,16 +242,62 @@ class _StudentRegistrationScreenState
                           keyboardType: TextInputType.phone,
                           isDark: isDark,
                         ),
+                        _buildTextField(
+                          controller: _passwordController,
+                          label: 'Password',
+                          icon: Icons.lock_outline,
+                          obscureText: true,
+                          isDark: isDark,
+                        ),
+                        _buildTextField(
+                          controller: _confirmPasswordController,
+                          label: 'Confirm Password',
+                          icon: Icons.lock_outline,
+                          obscureText: true,
+                          isDark: isDark,
+                        ),
+                        
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'OR SIGN UP WITH',
+                                style: TextStyle(
+                                  color: isDark ? AppColors.textSecondary : Colors.black54,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            SocialLoginButton(
+                              type: SocialType.google,
+                              onPressed: () {},
+                            ),
+                            const SizedBox(height: 16),
+                            SocialLoginButton(
+                              type: SocialType.microsoft,
+                              onPressed: () {},
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
                       ],
 
-                      // Step 2: Sports Profile
                       if (_currentStep == 2) ...[
                         Text(
                           'Primary Sport',
                           style: TextStyle(
-                            color: isDark
-                                ? AppColors.textSecondary
-                                : Colors.black87,
+                            color: isDark ? AppColors.textSecondary : Colors.black87,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -252,7 +307,7 @@ class _StudentRegistrationScreenState
                           runSpacing: 8,
                           children: _sports.map((sport) {
                             final isSelected = _selectedSports.contains(sport);
-                            return ChoiceChip(
+                            return FilterChip(
                               label: Text(sport),
                               selected: isSelected,
                               onSelected: (selected) {
@@ -264,37 +319,30 @@ class _StudentRegistrationScreenState
                                   }
                                 });
                               },
-                              selectedColor: AppColors.blue.withValues(
-                                alpha: 0.2,
-                              ),
+                              selectedColor: AppColors.blue.withOpacity(0.2),
                               backgroundColor: Colors.transparent,
-                              side: BorderSide(
-                                color: isSelected
-                                    ? AppColors.blue
-                                    : (isDark
-                                        ? Colors.white24
-                                        : Colors.black12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? AppColors.blue
+                                      : (isDark ? Colors.white24 : Colors.black12),
+                                ),
                               ),
                               labelStyle: TextStyle(
                                 color: isSelected
                                     ? AppColors.blue
-                                    : (isDark
-                                        ? AppColors.textPrimary
-                                        : Colors.black87),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
+                                    : (isDark ? Colors.white : Colors.black87),
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                               ),
                             );
                           }).toList(),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 32),
                         Text(
-                          'Current Skill Level',
+                          'Skill Level',
                           style: TextStyle(
-                            color: isDark
-                                ? AppColors.textSecondary
-                                : Colors.black87,
+                            color: isDark ? AppColors.textSecondary : Colors.black87,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -312,60 +360,58 @@ class _StudentRegistrationScreenState
                                   setState(() => _selectedLevel = level);
                                 }
                               },
-                              selectedColor: AppColors.blue.withValues(
-                                alpha: 0.2,
-                              ),
+                              selectedColor: AppColors.blue.withOpacity(0.2),
                               backgroundColor: Colors.transparent,
-                              side: BorderSide(
-                                color: isSelected
-                                    ? AppColors.blue
-                                    : (isDark
-                                        ? Colors.white24
-                                        : Colors.black12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? AppColors.blue
+                                      : (isDark ? Colors.white24 : Colors.black12),
+                                ),
                               ),
                               labelStyle: TextStyle(
                                 color: isSelected
                                     ? AppColors.blue
-                                    : (isDark
-                                        ? AppColors.textPrimary
-                                        : Colors.black87),
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
+                                    : (isDark ? Colors.white : Colors.black87),
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                               ),
                             );
                           }).toList(),
                         ),
                       ],
 
-                      // Step 3: Goals
                       if (_currentStep == 3) ...[
                         _buildTextField(
                           controller: _goalsController,
-                          label: 'Short term / Long term goals',
+                          label: 'Short-term Goals (Optional)',
                           icon: Icons.edit,
                           isDark: isDark,
-                          maxLines: 4,
                           isOptional: true,
+                          maxLines: 4,
                         ),
                       ],
-
-                      const SizedBox(height: 32),
-                      _isLoading
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.blue,
-                              ),
-                            )
-                          : SportsOSButton(
-                              text: _currentStep < _totalSteps
-                                  ? 'Continue'
-                                  : 'Complete Setup',
-                              onPressed: _nextStep,
-                            ).animate().fadeIn(delay: 300.ms),
                     ],
                   ),
                 ),
+              ),
+            ),
+
+            Container(
+              padding: const EdgeInsets.all(24.0),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.inkDark : AppColors.inkLight,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    offset: const Offset(0, -4),
+                    blurRadius: 16,
+                  ),
+                ],
+              ),
+              child: SportsOSButton(
+                text: _isLoading ? 'Loading...' : (_currentStep < _totalSteps ? 'Continue' : 'Complete Setup'),
+                onPressed: _isLoading ? () {} : _nextStep,
               ),
             ),
           ],

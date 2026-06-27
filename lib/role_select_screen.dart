@@ -33,57 +33,71 @@ class RoleSelectScreen extends ConsumerWidget {
           // Base Futuristic Background
           Container(
             decoration: BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.topRight,
-                radius: 1.5,
-                colors: isDark
-                    ? [AppColors.ink2Dark, AppColors.inkDark]
-                    : [AppColors.inkLight, Colors.white],
-              ),
+              gradient: isDark ? AppColors.darkGradient : AppColors.lightGradient,
             ),
           ),
 
-          // Neon Green Glow Effect (Top Right)
+          // Top Right Glow
           Positioned(
-            top: -50,
-            right: -50,
+            top: -100,
+            right: -100,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 450,
+              height: 450,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.green.withValues(
-                  alpha: isDark ? 0.15 : 0.05,
-                ),
+                color: isDark 
+                    ? AppColors.green.withValues(alpha: 0.15) 
+                    : AppColors.agGlowEmerald.withValues(alpha: 0.35), // Increased significantly
               ),
             )
                 .animate(
                   onPlay: (controller) => controller.repeat(reverse: true),
                 )
-                .scaleXY(end: 1.2, duration: 4.seconds)
-                .blurXY(end: 60),
+                .scaleXY(end: 1.3, duration: 4.seconds)
+                .blurXY(end: 120),
           ),
 
-          // Blue Glow Effect (Bottom Left)
+          // Bottom Left Glow
           Positioned(
-            bottom: -50,
-            left: -50,
+            bottom: -150,
+            left: -150,
             child: Container(
-              width: 300,
-              height: 300,
+              width: 500,
+              height: 500,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.blue.withValues(
-                  alpha: isDark ? 0.1 : 0.03,
-                ),
+                color: isDark 
+                    ? AppColors.blue.withValues(alpha: 0.1) 
+                    : AppColors.agGlowTeal.withValues(alpha: 0.35), // Increased significantly
               ),
             )
                 .animate(
                   onPlay: (controller) => controller.repeat(reverse: true),
                 )
-                .scaleXY(end: 1.3, duration: 5.seconds)
-                .blurXY(end: 80),
+                .scaleXY(end: 1.4, duration: 5.seconds)
+                .blurXY(end: 140),
           ),
+          
+          // Extra Middle Glow for Light Mode Enhancement
+          if (!isDark)
+            Positioned(
+              top: 150,
+              right: -150,
+              child: Container(
+                width: 550,
+                height: 550,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.agGlowMint.withValues(alpha: 0.25), // Increased significantly
+                ),
+              )
+                  .animate(
+                    onPlay: (controller) => controller.repeat(reverse: true),
+                  )
+                  .slideX(begin: 0, end: -0.3, duration: 6.seconds)
+                  .blurXY(end: 160),
+            ),
 
           // Main UI Content
           SafeArea(
@@ -130,13 +144,13 @@ class RoleSelectScreen extends ConsumerWidget {
 
                   // Student Card
                   _RoleCard(
-                    title: 'Student / Athlete',
+                    title: 'Athlete',
                     description: 'Discover sports and monitor your training',
                     icon: '🏃',
                     accentColor: AppColors.blue,
                     isDark: isDark,
                     onTap: () {
-                      context.push('/register/Student');
+                      context.push('/register/Athlete');
                     },
                   ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1),
                   const SizedBox(height: 16),
@@ -144,7 +158,7 @@ class RoleSelectScreen extends ConsumerWidget {
                   // Coach Card
                   _RoleCard(
                     title: 'Coach / Academy',
-                    description: 'Manage students, batches, and your profile',
+                    description: 'Manage your batches and profile',
                     icon: '📋',
                     accentColor: AppColors.amber,
                     isDark: isDark,
@@ -252,31 +266,39 @@ class _RoleCardState extends State<_RoleCard> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: widget.isDark
-                    ? (_isPressed
-                        ? widget.accentColor.withValues(alpha: 0.15)
-                        : AppColors.cardDark.withValues(alpha: 0.6))
-                    : (_isPressed
-                        ? widget.accentColor.withValues(alpha: 0.05)
-                        : Colors.white.withValues(alpha: 0.8)),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _isPressed
-                      ? widget.accentColor
-                      : widget.accentColor.withValues(alpha: 0.3),
-                  width: _isPressed ? 1.5 : 1.0,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.accentColor.withValues(
-                      alpha: _isPressed ? 0.15 : 0.05,
+              decoration: widget.isDark
+                  ? BoxDecoration(
+                      color: _isPressed
+                          ? widget.accentColor.withValues(alpha: 0.15)
+                          : AppColors.cardDark.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _isPressed
+                            ? widget.accentColor
+                            : widget.accentColor.withValues(alpha: 0.3),
+                        width: _isPressed ? 1.5 : 1.0,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: widget.accentColor.withValues(
+                            alpha: _isPressed ? 0.15 : 0.05,
+                          ),
+                          blurRadius: _isPressed ? 15 : 10,
+                          spreadRadius: _isPressed ? 4 : 2,
+                        ),
+                      ],
+                    )
+                  : AntiGravityStyle.floatingCard(
+                      borderRadius: 16.0,
+                      color: _isPressed ? AppColors.agPrimaryTranslucent : AppColors.agSurface,
+                    ).copyWith(
+                      border: Border.all(
+                        color: _isPressed
+                            ? AppColors.agPrimary
+                            : AppColors.agTextNeutral.withValues(alpha: 0.05),
+                        width: _isPressed ? 1.5 : 1.0,
+                      ),
                     ),
-                    blurRadius: _isPressed ? 15 : 10,
-                    spreadRadius: _isPressed ? 4 : 2,
-                  ),
-                ],
-              ),
               child: Row(
                 children: [
                   Container(
