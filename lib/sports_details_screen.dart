@@ -27,7 +27,7 @@ class SportsDetailsScreen extends ConsumerWidget {
         );
         
     // Filter academies by this sport
-    final relatedAcademies = ref.watch(academiesProvider).where((a) => a.sport.toLowerCase() == sport.name.toLowerCase()).toList();
+    final relatedAcademies = (ref.watch(academiesProvider).value ?? []).where((a) => a.sport.toLowerCase() == sport.name.toLowerCase()).toList();
     
     final selectedAcademies = ref.watch(compareProvider);
 

@@ -16,7 +16,7 @@ class CityPageScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
-    final allAcademies = ref.watch(academiesProvider);
+    final allAcademies = ref.watch(academiesProvider).value ?? [];
 
     // Filter academies by city
     final cityAcademies = allAcademies.where((a) => a.city.toLowerCase() == cityName.toLowerCase()).toList();

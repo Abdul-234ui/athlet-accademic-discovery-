@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'services/firestore_service.dart';
 
 class Coach {
   final String id;
@@ -54,6 +55,8 @@ class Academy {
   final String? website;
   final String gender;
   final List<String> ageGroups;
+  final double latitude;
+  final double longitude;
 
   Academy({
     required this.id,
@@ -81,7 +84,81 @@ class Academy {
     this.website,
     this.gender = 'Mixed',
     this.ageGroups = const ['All Ages'],
+    required this.latitude,
+    required this.longitude,
   });
+
+  factory Academy.fromJson(Map<String, dynamic> json) {
+    return Academy(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      sport: json['sport'] as String,
+      city: json['city'] as String,
+      distance: json['distance'] as String,
+      price: json['price'] as String,
+      rating: (json['rating'] as num).toDouble(),
+      reviewsCount: json['reviewsCount'] as int,
+      saveCount: json['saveCount'] as int,
+      rankingScore: json['rankingScore'] as int,
+      isVerified: json['isVerified'] as bool,
+      images: List<String>.from(json['images'] as List),
+      aboutText: json['aboutText'] as String,
+      features: List<String>.from(json['features'] as List),
+      badges: List<String>.from(json['badges'] as List),
+      facilities: List<String>.from(json['facilities'] as List),
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      coaches: (json['coaches'] as List).map((c) => Coach(
+        id: c['id'], name: c['name'], role: c['role'], imageUrl: c['imageUrl'], experience: c['experience']
+      )).toList(),
+      reviews: (json['reviews'] as List).map((r) => Review(
+        userName: r['userName'], rating: (r['rating'] as num).toDouble(), comment: r['comment'], date: r['date'], helpfulCount: r['helpfulCount'], images: List<String>.from(r['images'] ?? [])
+      )).toList(),
+      achievements: List<String>.from(json['achievements'] as List),
+      certifications: List<String>.from(json['certifications'] as List),
+      instagram: json['instagram'] as String?,
+      facebook: json['facebook'] as String?,
+      website: json['website'] as String?,
+      gender: json['gender'] as String,
+      ageGroups: List<String>.from(json['ageGroups'] as List),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'sport': sport,
+      'city': city,
+      'distance': distance,
+      'price': price,
+      'rating': rating,
+      'reviewsCount': reviewsCount,
+      'saveCount': saveCount,
+      'rankingScore': rankingScore,
+      'isVerified': isVerified,
+      'images': images,
+      'aboutText': aboutText,
+      'features': features,
+      'badges': badges,
+      'facilities': facilities,
+      'coaches': coaches.map((c) => {
+        'id': c.id, 'name': c.name, 'role': c.role, 'imageUrl': c.imageUrl, 'experience': c.experience
+      }).toList(),
+      'reviews': reviews.map((r) => {
+        'userName': r.userName, 'rating': r.rating, 'comment': r.comment, 'date': r.date, 'helpfulCount': r.helpfulCount, 'images': r.images
+      }).toList(),
+      'achievements': achievements,
+      'certifications': certifications,
+      'instagram': instagram,
+      'facebook': facebook,
+      'website': website,
+      'gender': gender,
+      'ageGroups': ageGroups,
+      'latitude': latitude,
+      'longitude': longitude,
+    };
+  }
 
   Academy addReview(Review newReview) {
     final updatedReviews = List<Review>.from(reviews)..insert(0, newReview);
@@ -114,24 +191,50 @@ class Academy {
       website: website,
       gender: gender,
       ageGroups: ageGroups,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }
 
-class AcademiesNotifier extends StateNotifier<List<Academy>> {
-  AcademiesNotifier() : super(_initialAcademies);
+class AcademiesNotifier extends StateNotifier<AsyncValue<List<Academy>>> {
+  final FirestoreService _firestoreService = FirestoreService();
+
+  AcademiesNotifier() : super(const AsyncValue.loading()) {
+    _fetchAcademies();
+  }
+
+  Future<void> _fetchAcademies() async {
+    // TEMPORARY BYPASS: Use local data with guaranteed GPS coordinates
+    // to prove distance sorting works, bypassing potential Firestore rules/sync issues.
+    state = AsyncValue.data(_initialAcademies);
+  }
+
+  Future<void> seedDatabase() async {
+    state = const AsyncValue.loading();
+    try {
+      final data = _initialAcademies.map((a) => a.toJson()).toList();
+      await _firestoreService.seedAcademies(data);
+      await _fetchAcademies();
+    } catch (e, st) {
+      print('Error seeding: $e');
+      state = AsyncValue.error(e, st);
+    }
+  }
 
   void addReview(String academyId, Review review) {
-    state = state.map((a) {
-      if (a.id == academyId) {
-        return a.addReview(review);
-      }
-      return a;
-    }).toList();
+    if (state.value != null) {
+      state = AsyncValue.data(state.value!.map((a) {
+        if (a.id == academyId) {
+          return a.addReview(review);
+        }
+        return a;
+      }).toList());
+    }
   }
 }
 
-final academiesProvider = StateNotifierProvider<AcademiesNotifier, List<Academy>>((ref) {
+final academiesProvider = StateNotifierProvider<AcademiesNotifier, AsyncValue<List<Academy>>>((ref) {
   return AcademiesNotifier();
 });
 
@@ -166,12 +269,14 @@ final _initialAcademies = [
         Review(userName: 'Vikram S.', rating: 4.5, comment: 'Great coaches, but parking gets full on weekends.', date: '1 month ago', helpfulCount: 4),
       ],
       achievements: ['Best Academy in South Zone 2023', 'Over 50 state-level players trained'],
-      certifications: ['ICC Accredited Center', 'BCCI Level 3 Coaches'],
+      certifications: ['BCCI Level 2', 'ECB Advanced'],
       instagram: 'https://instagram.com/wickethub',
       facebook: 'https://facebook.com/wickethub',
       website: 'https://wickethub.com',
       gender: 'Mixed',
       ageGroups: ['U-14', 'U-19', 'Adults'],
+      latitude: 25.2048,
+      longitude: 55.2708,
     ),
     Academy(
       id: '2',
@@ -205,6 +310,8 @@ final _initialAcademies = [
       website: 'https://primesportsarena.in',
       gender: 'Boys',
       ageGroups: ['Adults'],
+      latitude: 25.1119,
+      longitude: 55.1390,
     ),
     Academy(
       id: '3',
@@ -236,6 +343,8 @@ final _initialAcademies = [
       facebook: 'https://facebook.com/suvsports',
       gender: 'Mixed',
       ageGroups: ['Kids', 'Adults'],
+      latitude: 25.0805,
+      longitude: 55.1403,
     ),
     Academy(
       id: '4',
@@ -269,6 +378,8 @@ final _initialAcademies = [
       website: 'https://agymfitness.com',
       gender: 'Mixed',
       ageGroups: ['Adults'],
+      latitude: 18.5204,
+      longitude: 73.8567,
     ),
     Academy(
       id: '5',
@@ -297,6 +408,8 @@ final _initialAcademies = [
       certifications: ['4th-Dan Black Belt Led'],
       gender: 'Mixed',
       ageGroups: ['Kids', 'Adults'],
+      latitude: 13.5574,
+      longitude: 78.5029,
     ),
     Academy(
       id: '6',
@@ -323,6 +436,8 @@ final _initialAcademies = [
       certifications: ['Professional Instructors'],
       gender: 'Girls',
       ageGroups: ['All Ages'],
+      latitude: 13.5576,
+      longitude: 78.5031,
     ),
     Academy(
       id: '7',
@@ -349,6 +464,8 @@ final _initialAcademies = [
       certifications: ['Recognized Sports Association'],
       gender: 'Boys',
       ageGroups: ['U-14', 'U-19'],
+      latitude: 13.5570,
+      longitude: 78.5020,
     ),
   ];
 

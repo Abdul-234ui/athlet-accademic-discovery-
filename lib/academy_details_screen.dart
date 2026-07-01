@@ -119,7 +119,7 @@ class _AcademyDetailsScreenState extends ConsumerState<AcademyDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
-    final academies = ref.watch(academiesProvider);
+    final academies = ref.watch(academiesProvider).value ?? [];
     final academy = academies.firstWhere(
       (a) => a.id == widget.academyId,
       orElse: () => academies.first,

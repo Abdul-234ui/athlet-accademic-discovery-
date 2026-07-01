@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'auth_provider.dart';
 import 'colors.dart';
 import 'theme.dart';
 import 'sports_os_button.dart';
@@ -72,10 +73,40 @@ class _StudentRegistrationScreenState
         setState(() => _currentStep++);
       } else {
         setState(() => _isLoading = true);
-        await Future.delayed(const Duration(seconds: 2));
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-        context.go('/home');
+        try {
+          await ref.read(authStateProvider.notifier).registerWithEmail(
+            _emailController.text,
+            _passwordController.text,
+            widget.role,
+            {
+              'name': _nameController.text,
+              'phone': _phoneController.text,
+              'dob': _dobController.text,
+              'sports': _selectedSports.toList(),
+              'level': _selectedLevel,
+              'goals': _goalsController.text,
+            },
+          );
+          
+          if (!mounted) return;
+          context.go('/home');
+        } catch (e) {
+          if (!mounted) return;
+          setState(() => _isLoading = false);
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Registration Failed', style: TextStyle(color: Colors.red)),
+              content: Text(e.toString()),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
       }
     }
   }
@@ -281,12 +312,26 @@ class _StudentRegistrationScreenState
                           children: [
                             SocialLoginButton(
                               type: SocialType.google,
-                              onPressed: () {},
+                              onPressed: () async {
+                                try {
+                                  await ref.read(authControllerProvider).loginWithGoogle();
+                                  if (mounted) context.go('/home');
+                                } catch (e) {
+                                  // Ignore error for now
+                                }
+                              },
                             ),
                             const SizedBox(height: 16),
                             SocialLoginButton(
                               type: SocialType.microsoft,
-                              onPressed: () {},
+                              onPressed: () async {
+                                try {
+                                  await ref.read(authControllerProvider).loginWithMicrosoft();
+                                  if (mounted) context.go('/home');
+                                } catch (e) {
+                                  // Ignore error for now
+                                }
+                              },
                             ),
                           ],
                         ),
@@ -384,11 +429,11 @@ class _StudentRegistrationScreenState
                       if (_currentStep == 3) ...[
                         _buildTextField(
                           controller: _goalsController,
-                          label: 'Short-term Goals (Optional)',
-                          icon: Icons.edit,
+                          label: 'My Goals (Optional)',
+                          icon: Icons.flag,
                           isDark: isDark,
                           isOptional: true,
-                          maxLines: 4,
+                          maxLines: 3,
                         ),
                       ],
                     ],

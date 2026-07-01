@@ -9,6 +9,7 @@ import 'theme.dart';
 import 'sports_os_button.dart';
 import 'glass_container.dart';
 import 'social_login_button.dart';
+import 'auth_provider.dart';
 
 class ChildFormData {
   final TextEditingController nameController = TextEditingController();
@@ -88,10 +89,43 @@ class _ParentRegistrationScreenState
         setState(() => _currentStep++);
       } else {
         setState(() => _isLoading = true);
-        await Future.delayed(const Duration(seconds: 2));
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-        context.go('/home');
+        try {
+          final childrenData = _children.map((c) => {
+            'name': c.nameController.text,
+            'age': c.ageController.text,
+            'sport': c.selectedSport,
+          }).toList();
+
+          await ref.read(authStateProvider.notifier).registerWithEmail(
+            _emailController.text,
+            _passwordController.text,
+            widget.role,
+            {
+              'parentName': _parentNameController.text,
+              'phone': _phoneController.text,
+              'children': childrenData,
+            },
+          );
+          
+          if (!mounted) return;
+          context.go('/home');
+        } catch (e) {
+          if (!mounted) return;
+          setState(() => _isLoading = false);
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Registration Failed', style: TextStyle(color: Colors.red)),
+              content: Text(e.toString()),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
       }
     }
   }
@@ -291,12 +325,26 @@ class _ParentRegistrationScreenState
                           children: [
                             SocialLoginButton(
                               type: SocialType.google,
-                              onPressed: () {},
+                              onPressed: () async {
+                                try {
+                                  await ref.read(authControllerProvider).loginWithGoogle();
+                                  if (mounted) context.go('/home');
+                                } catch (e) {
+                                  // Ignore error for now
+                                }
+                              },
                             ),
                             const SizedBox(height: 16),
                             SocialLoginButton(
                               type: SocialType.microsoft,
-                              onPressed: () {},
+                              onPressed: () async {
+                                try {
+                                  await ref.read(authControllerProvider).loginWithMicrosoft();
+                                  if (mounted) context.go('/home');
+                                } catch (e) {
+                                  // Ignore error for now
+                                }
+                              },
                             ),
                           ],
                         ),

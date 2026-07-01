@@ -99,7 +99,7 @@ class _SearchTabState extends ConsumerState<SearchTab> {
   @override
   Widget build(BuildContext context) {
     final recentSearches = ref.watch(recentSearchesProvider);
-    final allAcademies = ref.watch(academiesProvider);
+    final allAcademies = ref.watch(academiesProvider).value ?? [];
     final results = _getFilteredResults(allAcademies);
 
     return SafeArea(

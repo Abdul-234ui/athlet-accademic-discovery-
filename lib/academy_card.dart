@@ -12,6 +12,7 @@ class AcademyCard extends ConsumerWidget {
   final bool isSelected;
   final VoidCallback onSelect;
   final int delayMs;
+  final String? calculatedDistance;
 
   const AcademyCard({
     super.key,
@@ -19,6 +20,7 @@ class AcademyCard extends ConsumerWidget {
     required this.isSelected,
     required this.onSelect,
     this.delayMs = 0,
+    this.calculatedDistance,
   });
 
   @override
@@ -212,7 +214,7 @@ class AcademyCard extends ConsumerWidget {
                       Icon(Icons.location_on, size: 14, color: accentColor),
                       const SizedBox(width: 4),
                       Text(
-                        '${academy.city} • ${academy.distance}',
+                        '${academy.city} • ${calculatedDistance ?? academy.distance}',
                         style: TextStyle(
                           color: isDark ? AppColors.textSecondary : Colors.black54,
                           fontSize: 13,

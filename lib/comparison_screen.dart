@@ -13,7 +13,7 @@ class ComparisonScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
     final selectedIds = ref.watch(compareProvider);
-    final allAcademies = ref.watch(academiesProvider);
+    final allAcademies = ref.watch(academiesProvider).value ?? [];
     
     final selectedAcademies = allAcademies.where((a) => selectedIds.contains(a.id)).toList();
 

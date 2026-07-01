@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'auth_provider.dart';
+import 'academy_provider.dart';
 import 'theme.dart';
 import 'utils.dart';
+import 'colors.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -57,12 +59,23 @@ class ProfileScreen extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircleAvatar(
-                  radius: 60,
-                  backgroundImage: getProfileImageProvider(user.photoURL),
-                  child: user.photoURL == null
-                      ? const Icon(Icons.person, size: 60)
-                      : null,
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.grey.shade300,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: (user.photoURL == null || user.photoURL!.isEmpty)
+                      ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                      : Image.network(
+                          user.photoURL!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.person, size: 60, color: Colors.grey);
+                          },
+                        ),
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -78,6 +91,26 @@ class ProfileScreen extends ConsumerWidget {
                   style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 const SizedBox(height: 32),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Seeding Database...')),
+                    );
+                    await ref.read(academiesProvider.notifier).seedDatabase();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Database Seeded Successfully!')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.cloud_upload),
+                  label: const Text('Seed Academies to Database'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: () {
                     ref.read(authStateProvider.notifier).signOut();

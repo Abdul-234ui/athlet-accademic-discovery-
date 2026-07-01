@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'shared_prefs_provider.dart';
-
+import 'services/firestore_service.dart';
+import 'auth_provider.dart';
 class ShortlistState {
   final Set<String> academyIds;
   final Set<String> coachIds;
@@ -28,11 +29,21 @@ class ShortlistState {
 
 class ShortlistNotifier extends StateNotifier<ShortlistState> {
   final SharedPreferences prefs;
+  final String? uid;
+  final FirestoreService _firestoreService = FirestoreService();
+  
   static const _academiesKey = 'shortlist_academies';
   static const _coachesKey = 'shortlist_coaches';
 
-  ShortlistNotifier(this.prefs) : super(ShortlistState(academyIds: {}, coachIds: {})) {
+  ShortlistNotifier(this.prefs, this.uid) : super(ShortlistState(academyIds: {}, coachIds: {})) {
+    _init();
+  }
+
+  Future<void> _init() async {
     _loadFromPrefs();
+    if (uid != null) {
+      await _syncWithCloud();
+    }
   }
 
   void _loadFromPrefs() {
@@ -44,9 +55,15 @@ class ShortlistNotifier extends StateNotifier<ShortlistState> {
     );
   }
 
-  void _saveToPrefs() {
-    prefs.setStringList(_academiesKey, state.academyIds.toList());
-    prefs.setStringList(_coachesKey, state.coachIds.toList());
+  Future<void> _saveToPrefs() async {
+    await prefs.setStringList(_academiesKey, state.academyIds.toList());
+    await prefs.setStringList(_coachesKey, state.coachIds.toList());
+  }
+
+  Future<void> _saveToCloud() async {
+    if (uid != null) {
+      await _firestoreService.saveShortlist(uid!, state.academyIds.toList(), state.coachIds.toList());
+    }
   }
 
   void toggleAcademy(String id) {
@@ -58,6 +75,7 @@ class ShortlistNotifier extends StateNotifier<ShortlistState> {
     }
     state = state.copyWith(academyIds: updated);
     _saveToPrefs();
+    _saveToCloud();
   }
 
   void toggleCoach(String id) {
@@ -69,42 +87,48 @@ class ShortlistNotifier extends StateNotifier<ShortlistState> {
     }
     state = state.copyWith(coachIds: updated);
     _saveToPrefs();
+    _saveToCloud();
   }
 
   void clearSelection() {
     state = state.copyWith(academyIds: {}, coachIds: {});
     _saveToPrefs();
+    _saveToCloud();
   }
 
-  Future<void> syncWithCloud(String? email) async {
-    if (email == null) return;
+  Future<void> _syncWithCloud() async {
+    if (uid == null) return;
     
-    // Set syncing state
     state = state.copyWith(isSyncing: true);
 
-    // Simulate network delay for sync
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final cloudData = await _firestoreService.getShortlist(uid!);
+      
+      final cloudAcademies = cloudData['academyIds']!.toSet();
+      final cloudCoaches = cloudData['coachIds']!.toSet();
 
-    // Mock fetched data from cloud (simulate fetching from a database)
-    final cloudAcademies = {'1', '2'}; 
-    final cloudCoaches = {'c1'};
+      // Merge cloud data with local data
+      final mergedAcademies = Set<String>.from(state.academyIds)..addAll(cloudAcademies);
+      final mergedCoaches = Set<String>.from(state.coachIds)..addAll(cloudCoaches);
 
-    // Merge cloud data with local data
-    final mergedAcademies = Set<String>.from(state.academyIds)..addAll(cloudAcademies);
-    final mergedCoaches = Set<String>.from(state.coachIds)..addAll(cloudCoaches);
-
-    state = state.copyWith(
-      academyIds: mergedAcademies,
-      coachIds: mergedCoaches,
-      isSyncing: false,
-    );
-    _saveToPrefs();
-    
-    print('Synced shortlists with cloud for $email');
+      state = state.copyWith(
+        academyIds: mergedAcademies,
+        coachIds: mergedCoaches,
+        isSyncing: false,
+      );
+      
+      await _saveToPrefs();
+      await _saveToCloud();
+    } catch (e) {
+      print('Error syncing shortlist with cloud: $e');
+      state = state.copyWith(isSyncing: false);
+    }
   }
 }
 
 final shortlistProvider = StateNotifierProvider<ShortlistNotifier, ShortlistState>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return ShortlistNotifier(prefs);
+  final authState = ref.watch(authStateProvider);
+  final uid = authState.value?.uid;
+  return ShortlistNotifier(prefs, uid);
 });

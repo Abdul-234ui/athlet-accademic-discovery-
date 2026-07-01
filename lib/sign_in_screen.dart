@@ -311,15 +311,29 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   // Social Login Buttons
                   SocialLoginButton(
                     type: SocialType.google,
-                    onPressed: () {
-                      // Handle Google login
+                    onPressed: () async {
+                      try {
+                        await ref.read(authControllerProvider).loginWithGoogle();
+                        if (mounted) context.go('/home');
+                      } catch (e) {
+                        if (mounted) {
+                          setState(() => _errorMessage = 'Google: ${e.toString()}');
+                        }
+                      }
                     },
                   ).animate().fadeIn(delay: 800.ms),
                   const SizedBox(height: 16),
                   SocialLoginButton(
                     type: SocialType.microsoft,
-                    onPressed: () {
-                      // Handle Microsoft login
+                    onPressed: () async {
+                      try {
+                        await ref.read(authControllerProvider).loginWithMicrosoft();
+                        if (mounted) context.go('/home');
+                      } catch (e) {
+                        if (mounted) {
+                          setState(() => _errorMessage = 'Microsoft Sign-In failed');
+                        }
+                      }
                     },
                   ).animate().fadeIn(delay: 850.ms),
 

@@ -61,7 +61,7 @@ class _AcademiesSearchScreenState extends ConsumerState<AcademiesSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
-    final allAcademies = ref.watch(academiesProvider);
+    final allAcademies = ref.watch(academiesProvider).value ?? [];
 
     // Filter logic
     final filteredAcademies = allAcademies.where((academy) {

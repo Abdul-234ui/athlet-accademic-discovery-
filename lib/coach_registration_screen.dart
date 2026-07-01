@@ -9,6 +9,7 @@ import 'theme.dart';
 import 'sports_os_button.dart';
 import 'glass_container.dart';
 import 'social_login_button.dart';
+import 'auth_provider.dart';
 
 class CoachRegistrationScreen extends ConsumerStatefulWidget {
   const CoachRegistrationScreen({super.key});
@@ -67,11 +68,34 @@ class _CoachRegistrationScreenState
         setState(() => _currentStep++);
       } else {
         setState(() => _isLoading = true);
-        await Future.delayed(const Duration(seconds: 2)); // Simulate network
-        if (!mounted) return;
-        setState(() => _isLoading = false);
-        // After wizard, go to verification upload screen (we can route them to home for now or a new verification screen)
-        context.go('/home');
+        try {
+          await ref.read(authStateProvider.notifier).registerWithEmail(
+            _emailController.text,
+            _passwordController.text,
+            'coach',
+            {
+              'coachName': _nameController.text,
+              'phone': _phoneController.text,
+              'experience': _experienceController.text,
+              'academy': _academyController.text,
+              'achievements': _achievementsController.text,
+              'sports': _selectedSports.toList(),
+              'certificates': _uploadedCertificates,
+            },
+          );
+          
+          if (!mounted) return;
+          context.go('/home');
+        } catch (e) {
+          if (!mounted) return;
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Registration failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -279,12 +303,26 @@ class _CoachRegistrationScreenState
                           children: [
                             SocialLoginButton(
                               type: SocialType.google,
-                              onPressed: () {},
+                              onPressed: () async {
+                                try {
+                                  await ref.read(authControllerProvider).loginWithGoogle();
+                                  if (mounted) context.go('/home');
+                                } catch (e) {
+                                  // Ignore error for now
+                                }
+                              },
                             ),
                             const SizedBox(height: 16),
                             SocialLoginButton(
                               type: SocialType.microsoft,
-                              onPressed: () {},
+                              onPressed: () async {
+                                try {
+                                  await ref.read(authControllerProvider).loginWithMicrosoft();
+                                  if (mounted) context.go('/home');
+                                } catch (e) {
+                                  // Ignore error for now
+                                }
+                              },
                             ),
                           ],
                         ),

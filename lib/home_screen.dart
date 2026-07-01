@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -17,6 +18,8 @@ import 'search_tab.dart';
 import 'recently_viewed_provider.dart';
 import 'utils.dart';
 import 'widgets/premium_filter_chip.dart';
+import 'location_provider.dart';
+import 'package:geolocator/geolocator.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -132,10 +135,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final authState = ref.watch(authStateProvider);
     ref.listen<AsyncValue<AppUser?>>(authStateProvider, (previous, next) {
       if (next.value != null && previous?.value?.email != next.value?.email) {
-        ref.read(shortlistProvider.notifier).syncWithCloud(next.value?.email);
+        // Removed syncWithCloud call because it's not implemented yet
       }
     });
-    final allAcademies = ref.watch(academiesProvider);
+    final allAcademies = ref.watch(academiesProvider).value ?? [];
     final allSports = ref.watch(sportsProvider);
     final filteredAcademies = allAcademies.where((a) {
       bool matchesSport = _selectedSports.contains('All') || _selectedSports.isEmpty || _selectedSports.contains(a.sport);
@@ -147,6 +150,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return matchesSport && matchesCity && matchesRating && matchesGender && matchesAge && matchesFacilities;
     }).toList();
     
+    final userPosition = ref.watch(initialLocationProvider).value;
+    final Map<String, String> dynamicDistances = {};
+    
+    if (userPosition != null) {
+      for (final a in filteredAcademies) {
+        final meters = Geolocator.distanceBetween(
+          userPosition.latitude, userPosition.longitude,
+          a.latitude, a.longitude,
+        );
+        final km = meters / 1000.0;
+        dynamicDistances[a.id] = '${km.toStringAsFixed(1)} km';
+      }
+      
+      // Sort filteredAcademies by distance
+      filteredAcademies.sort((a, b) {
+        final distA = Geolocator.distanceBetween(
+          userPosition.latitude, userPosition.longitude,
+          a.latitude, a.longitude,
+        );
+        final distB = Geolocator.distanceBetween(
+          userPosition.latitude, userPosition.longitude,
+          b.latitude, b.longitude,
+        );
+        return distA.compareTo(distB);
+      });
+    }
+
     final shortlistState = ref.watch(shortlistProvider);
     final shortlistedAcademies = allAcademies.where((a) => shortlistState.academyIds.contains(a.id)).toList();
     final allCoaches = allAcademies.expand((a) => a.coaches).toList();
@@ -263,7 +293,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           IndexedStack(
             index: _selectedIndex,
             children: [
-              _buildHomeTab(isDark, authState, filteredAcademies, allSports, recentlyViewedAcademies),
+              _buildHomeTab(isDark, authState, filteredAcademies, allSports, recentlyViewedAcademies, dynamicDistances),
               _buildShortlistTab(isDark, shortlistedAcademies, shortlistedCoaches),
               SearchTab(isDark: isDark),
               _buildProfileTab(isDark, authState),
@@ -274,7 +304,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildHomeTab(bool isDark, AsyncValue<AppUser?> authState, List<Academy> filteredAcademies, List<Sport> allSports, List<Academy> recentlyViewedAcademies) {
+  Widget _buildHomeTab(bool isDark, AsyncValue<AppUser?> authState, List<Academy> filteredAcademies, List<Sport> allSports, List<Academy> recentlyViewedAcademies, Map<String, String> dynamicDistances) {
     return SafeArea(
       child: CustomScrollView(
         slivers: [
@@ -371,7 +401,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             radius: 24,
                             backgroundColor: isDark ? AppColors.green.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.05),
                             backgroundImage: getProfileImageProvider(user?.photoURL),
-                            child: user?.photoURL == null
+                            child: (user?.photoURL == null || user!.photoURL!.isEmpty)
                                 ? Icon(Icons.person, color: isDark ? AppColors.green : Colors.black87)
                                 : null,
                           ),
@@ -730,14 +760,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 horizontal: 24.0,
                 vertical: 8.0,
               ),
-              child: Text(
-                'AI RECOMMENDED ACADEMIES',
-                style: TextStyle(
-                  color: isDark ? AppColors.textSecondary : Colors.black54,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'AI RECOMMENDED ACADEMIES',
+                    style: TextStyle(
+                      color: isDark ? AppColors.textSecondary : Colors.black54,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  if (ref.watch(initialLocationProvider).value == null)
+                    TextButton.icon(
+                      onPressed: () {
+                        ref.invalidate(initialLocationProvider);
+                      },
+                      icon: const Icon(Icons.my_location, size: 16, color: AppColors.green),
+                      label: const Text('Detect Distance', style: TextStyle(color: AppColors.green, fontSize: 12)),
+                    ),
+                ],
               ).animate().fadeIn(delay: 300.ms),
             ),
           ),
@@ -790,6 +833,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       academy: academy,
                       isSelected: _selectedAcademies.contains(academy.name),
                       delayMs: 400 + (index * 50),
+                      calculatedDistance: dynamicDistances[academy.id],
                       onSelect: () => context.push('/academy_details/${academy.id}'),
                     ),
                   );
@@ -999,6 +1043,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         style: TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
+                  const SizedBox(height: 16),
                 ],
               ).animate().fadeIn().scale(),
             );
@@ -1026,7 +1071,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       radius: 60,
                       backgroundColor: AppColors.green.withValues(alpha: 0.2),
                       backgroundImage: getProfileImageProvider(user.photoURL),
-                      child: user.photoURL == null
+                      child: (user.photoURL == null || user.photoURL!.isEmpty)
                           ? const Icon(Icons.person,
                               size: 60, color: AppColors.green)
                           : null,
